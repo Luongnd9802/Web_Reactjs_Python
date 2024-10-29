@@ -1,0 +1,46 @@
+services:
+  frontend:
+    build:
+      context: frontend
+    container_name: react-frontend  # Đường dẫn đến thư mục Frontend
+    ports:
+      - "3000:80"  # Map port 3000 của container đến port 3000 của máy host
+    networks:
+      - app-network
+    depends_on:
+      - backend  # Đảm bảo rằng backend đã chạy trước khi frontend khởi động
+
+  backend:
+    build:
+      context: backend  # Đường dẫn đến thư mục Backend
+    container_name: fastapi-backend 
+    ports:
+      - "8000:8000"  # Map port 8000 của container đến port 8000 của máy host
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+    environment:
+      - DATABASE_URL=mysql+pymysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+    env_file:
+      - ./backend/config/.env
+
+  mysql:
+    image: mysql:8.0  # Image MySQL phiên bản 8.0
+    restart: always
+    networks:
+      - app-network  # Tự động khởi động lại nếu MySQL container bị dừng
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${DB_PORT}:3306"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
